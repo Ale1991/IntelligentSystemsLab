@@ -22,7 +22,7 @@ class RobotBrain(threading.Thread):
     nome : str
     direction: Direction
     isLocked: bool
-    isRunning: bool
+    goalReached: bool
 
     def __init__(self):
         threading.Thread.__init__(self) # inziatilze superclass attribute
@@ -37,7 +37,7 @@ class RobotBrain(threading.Thread):
         self.nome = ROBOT_NAME
         self.direction = None
         self.isLocked = False
-        self.isRunning = True
+        self.goalReached = False
         self._sensor_array = [""]*3
         self._alreadyTriedNord = False
         self._canStep = False
@@ -64,7 +64,8 @@ class RobotBrain(threading.Thread):
         self._sensor_array = sensor_array
         self._canThink = True
         self.direction = direction
-        print(f"x: {x}, y: {y}, sensor: {self._sensor_array}, canThink: {self._canThink}")
+        self.goalReached = self.checkGoal(x, y)
+        # print(f"x: {x}, y: {y}, sensor: {self._sensor_array}, canThink: {self._canThink}")
 
     def azione(self):
         # algoritmo di decisione su quale azione prendere
@@ -78,13 +79,13 @@ class RobotBrain(threading.Thread):
             elif self.energyFound() == True:
                 return self.pathfindToEnergy()
             elif self.direction != Direction.NORD and self._alreadyTriedNord == False:
-                print("tryNord")
+                # print("tryNord")
                 return self.tryNord()
             elif self.canGoForward() == True:
-                print("canGoForward")
+                # print("canGoForward")
                 return self.pathfindToForward()
             else:
-                print("randomPathfind")
+                # print("randomPathfind")
                 return self.randomPathfind()
          
     def tryNord(self):
@@ -108,11 +109,11 @@ class RobotBrain(threading.Thread):
     def pathfindToEnergy(self):
         self._canThink = False
         if self._sensor_array[1] == MapElement.ENERGY.value:
-            return [Action.STEP] # step  
+            return [Action.STEP, Action.UPDATE_SONAR] # step  
         elif self._sensor_array[0] == MapElement.ENERGY.value:
-            return [Action.RS, Action.STEP, Action.RD, Action.STEP] #, Action.RD, Action.STEP ruota a sx, step  
+            return [Action.RS,  Action.STEP,  Action.RD,  Action.STEP, Action.UPDATE_SONAR] #, Action.RD, Action.STEP ruota a sx, step  
         elif self._sensor_array[2] == MapElement.ENERGY.value:
-            return [Action.RD, Action.STEP, Action.RS, Action.STEP] # ruota a dx, step
+            return [Action.RD,  Action.STEP,  Action.RS,  Action.STEP, Action.UPDATE_SONAR] # ruota a dx, step
 
     def canGoForward(self):
         if MapElement.FREE.value in self._sensor_array:
@@ -124,11 +125,11 @@ class RobotBrain(threading.Thread):
         self._alreadyTriedNord = False
         self._canThink = False
         if self._sensor_array[1] == MapElement.FREE.value:
-            return [Action.STEP] # step    
+            return [Action.STEP, Action.UPDATE_SONAR] # step    
         elif self._sensor_array[0] == MapElement.FREE.value:
-            return [Action.RS, Action.STEP, Action.RD, Action.STEP] #, Action.RD, Action.STEP ruota a sx, step  
+            return [Action.RS, Action.STEP, Action.RD, Action.STEP, Action.UPDATE_SONAR] #, Action.RD, Action.STEP ruota a sx, step  
         elif self._sensor_array[2] == MapElement.FREE.value:
-            return [Action.RD, Action.STEP, Action.RS, Action.STEP] # ruota a dx, step
+            return [Action.RD, Action.STEP, Action.RS, Action.STEP, Action.UPDATE_SONAR] # ruota a dx, step
 
     def randomPathfind(self):
         random_action_list = []
@@ -150,11 +151,18 @@ class RobotBrain(threading.Thread):
             # print(f"actionBodyRequest: {jsn}")
             self._Redis.publish(CH_BRAIN_BODY, jsn)
 
+    def checkGoal(self, x, y):
+        if y <= 1:
+            return True
+        else:
+            return False
+
     def run(self):
-        while self.isRunning:
+        while self.goalReached == False:
+            print("-----------NEW ACTION-----------")
             self.actionBodyRequest(self.azione())
-            time.sleep(0.5)
-        # while self.isRunning:
+            time.sleep(0.1)
+        # while self.goalReached:
         #     if self._canStep == True:
         #         print("robotBrain._canStep == True")
         #         self.actionBodyRequest(self.azione())# se la lettura dei sensori da redis da esito positivo allora procede a calcolare l'azione

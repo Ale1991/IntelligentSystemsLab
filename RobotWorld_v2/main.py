@@ -4,6 +4,22 @@
     (labirinto)
     e oggetti energetici da raccogliere che ricaricano la
     batteria del robot per continuare a funzionare
+
+    UPDATE:
+    -Wrold: SENSE ->invia il risultato dei sensori sul canale WORLD-BODY
+                    ->invia i parametri del mondo da stampare al Simulator sul canale SIMULATOR
+    -RobotBrain: PLAN -> invia il risultato decisionale sul canale BRAIN-BODY
+    -RobotBody: ACT -> invia le request per i sensori sul canale WORLD-BODY
+                    -> invia i propri parametri al brain sul canale BRAIN-BODY
+    -Simulator: PLOT-> riceve i dati del mondo da stampare sul canale SIMULATOR
+
+    tutti i canali di comunicazione sono stati implementati attraverso redis
+    le 4 classi sono state implementate attraverso l'utilizzo di Thread
+    ogni classe instanzia i rispettivi listener per i canali attraverso altri Thread
+    le race condition tra body e brain sono state evitate attraverso l'ausilio di due flag e Action.UPDATE-SENSOR come trigger di request dati
+
+    ENCODE-DECODE attraverso json: ricostruzione di object custom attraverso EnumEncode in ./utility.py
+    
 """
 
 # NECESSARIA LA LIBRERIA "pygame" per funzionare (necessaria per il plot grafico)
@@ -32,7 +48,7 @@ def main():
     rBody.name = "RobotBodyThread"
     rBody.start()
 
-    world = World("mappa2.txt")
+    world = World("mappa1.txt")
     world.name = "WorlThread"
     world.start()
 
@@ -42,8 +58,7 @@ def main():
 
 
 
-# DEVO FINIRE DI FARE IL BUFFER NEL MONDO CHE VERRA RIEMPITO DAL SUBSCRIBER CHIAMATO CONSUMER
-# DOPODICHE' VA RIALLACCIATO IL PLOT E LO STEPPER DEL MONDO CON IL BUFFER
+# TODO miss implementation for plot goal, battery, number_of_steps and stop brain when out of battery
 
 if __name__ == '__main__':
     main()

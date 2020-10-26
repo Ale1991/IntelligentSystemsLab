@@ -12,6 +12,8 @@ ROTATION_DRAIN_AMT = 1 # set 0 for free rotation cost
 MAX_BATTERY = 100
 ROBOT_NAME = "R"
 
+START_X, START_Y = 14, 12
+
 CH_IN= "CH_WORLD"
 CH_OUT = "CH_BRAIN"
 
@@ -57,7 +59,7 @@ class RobotBody(threading.Thread):
 
     def init_Robot(self):
         self.direction = START_DIRECTION
-        self.x, self.y = 14, 12
+        self.x, self.y = START_X, START_Y
         self.sensor = [""]*3
         self.path = []
 

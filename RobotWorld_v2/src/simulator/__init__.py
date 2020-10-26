@@ -121,17 +121,18 @@ class Simulator(threading.Thread):
         SCREEN.blit(auto_text, (5, 420))
 
         if self.isNullRobotValue() == False:
+            pass
             # batteryColor = GREEN if self._robotBattery > 0 else RED
             # battery_text = FONT.render(f"BATTERY: {self._robotBattery}", 1, batteryColor)
             # SCREEN.blit(battery_text, (200, 480))
 
-            lockedColor = RED if self._robotIsLocked == True else GREEN
-            isLocked_text = FONT.render(f"isLocked: {self._robotIsLocked}", 1, lockedColor)
-            SCREEN.blit(isLocked_text, (5, 450))
+            # lockedColor = RED if self._robotIsLocked == True else GREEN
+            # isLocked_text = FONT.render(f"isLocked: {self._robotIsLocked}", 1, lockedColor)
+            # SCREEN.blit(isLocked_text, (5, 450))
 
-            goalColor = GREEN if self._robotGoalReached == True else RED
-            goal_reached_text = FONT.render(f"GOAL_REACHED: {self._robotGoalReached}", 1, goalColor)
-            SCREEN.blit(goal_reached_text, (200, 450))
+            # goalColor = GREEN if self._robotGoalReached == True else RED
+            # goal_reached_text = FONT.render(f"GOAL_REACHED: {self._robotGoalReached}", 1, goalColor)
+            # SCREEN.blit(goal_reached_text, (200, 450))
 
     def print(self):
         SCREEN.fill(BLACK)
