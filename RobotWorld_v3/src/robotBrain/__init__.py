@@ -1,4 +1,5 @@
 import threading, json, redis, time
+from pyswip import Prolog
 
 from src.direction import Direction
 from src.action import Action
@@ -6,7 +7,6 @@ from src.mapelement import MapElement
 from utility import EnumEncoder
 
 # Robot Settings
-START_DIRECTION = Direction.EST
 MAX_BATTERY = 100
 STEP_DRAIN_AMT = 1
 ROTATION_DRAIN_AMT = 1 # set 0 for free rotation cost 
@@ -47,12 +47,25 @@ class RobotBrain(threading.Thread):
     def init_BodyListener(self):
         self._pubsub = self._Redis.pubsub()
         self._pubsub.subscribe(CH_BRAIN_BODY)
+        
         self._listener = threading.Thread(target=self.listen_body)
         self._listener.name = "RobotBrain_BodyListener"
         self._listener.start()
 
+    def init_prolog(self):
+        prolog = Prolog()
+        prolog.consult("robot_swi.pl")
+        # self.updatePrologSensorValue()
+        query = "move(X)."
+        # queryResult = self._prolog.query(query)
+        # for solution in queryResult:
+        #     print("direction: ", solution["X"])
+
     def listen_body(self):
         for action_str in self._pubsub.listen(): # start listening
+        # message = self._pubsub.get_message()
+        # for action_str in message:
+        # if message != None:
             if action_str["type"] == "message":
                 jData = json.loads(action_str["data"])
                 if "bodyResponse" in jData: # se trova una response
@@ -66,12 +79,23 @@ class RobotBrain(threading.Thread):
         self.direction = direction
         self.goalReached = self.checkGoal(x, y)
 
+    def updatePrologSensorValue(self):
+        pass
+        # print(f'sensor_Left("{self._sensor_array[0]}")')
+        # print(f'sensor_Forward("{self._sensor_array[1]}")')
+        # print((f'sensor_Right("{self._sensor_array[2]}")'))
+        # self._prolog.assertz(f'sensor_Left("{self._sensor_array[0]}")')
+        # self._prolog.assertz(f'sensor_Forward("{self._sensor_array[1]}")')
+        # self._prolog.assertz(f'sensor_Right("{self._sensor_array[2]}")')
+
     def actionBodyRequest(self, action_list):
         if action_list != None:
+            jsn_actions = []
             for action in action_list:
                 jsn_act = json.dumps(action, cls=EnumEncoder)
-                jsn = json.dumps({ 'brainRequest': 'Action', 'Action': jsn_act})
-                self._Redis.publish(CH_BRAIN_BODY, jsn)
+                jsn_actions.append(jsn_act)
+            jsn = json.dumps({ 'brainRequest': 'Action', 'Action': jsn_actions})
+            self._Redis.publish(CH_BRAIN_BODY, jsn)
 
 #region Decision Function
     def azione(self):
@@ -80,6 +104,14 @@ class RobotBrain(threading.Thread):
         if self.direction != Direction.NORD and self.direction != Direction.EST and self.direction != Direction.SUD and self.direction != Direction.OVEST :
             pass
         else:
+            # self.updatePrologSensorValue()
+            # prolog = Prolog()
+            # prolog.consult("robot_swi.pl")
+            # self.updatePrologSensorValue()
+            # query = "move(X)."
+            # queryResult = self._prolog.query(query)
+            # for solution in queryResult:
+            #     print("direction: ", solution["X"])
             if self.isLocked == True:
                 return self.randomPathfind()
             elif self.energyFound() == True:
@@ -155,6 +187,7 @@ class RobotBrain(threading.Thread):
             return False
 
     def run(self):
+        # time.sleep(3)
         while self.goalReached == False:
             print("-----------NEW ACTION-----------")
             self.actionBodyRequest(self.azione())

@@ -57,7 +57,6 @@ def main():
     simulator.start()
 
 
-
 # TODO miss implementation for plot goal, battery, number_of_steps and stop brain when out of battery
 
 if __name__ == '__main__':

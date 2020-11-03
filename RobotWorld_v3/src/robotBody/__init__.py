@@ -29,6 +29,7 @@ class RobotBody(threading.Thread):
     step_drain_amt: int
     rotation_drain_amt: int
     nome : str
+    actionBuffer: list
 
     isWorldReady: bool
 
@@ -64,8 +65,9 @@ class RobotBody(threading.Thread):
         self.rotation_drain_amt = ROTATION_DRAIN_AMT
         self.max_battery = MAX_BATTERY
         self.nome = ROBOT_NAME
-
+        self.actionBuffer = []
         self.isWorldReady = False
+
 
     def listen_world(self):
         for jsn in self._worldPubSub.listen(): # start listening
@@ -73,20 +75,22 @@ class RobotBody(threading.Thread):
                 jData = json.loads(jsn["data"])
                 if "worldResponse" in jData: # se trova una response
                     if jData["worldResponse"] == "updateSensorResponse":
-                        self.onUpdateSensorResponse(jData["x"], jData["y"], jData["sensor_array"])
+                        self.onUpdateSensorResponse(jData["sensor_array"])
 
     def listen_brain(self):
         for jsn in self._brainPubSub.listen(): # start listening
             if jsn["type"] == "message":
                 jData = json.loads(jsn["data"])
                 if "brainRequest" in jData: # se trova una response
-                    action = json.loads(jData["Action"], object_hook=EnumEncoder.as_enum)
-                    # print(f"robotBody->listen_brain action: {action}")
-                    self.onActionRequest(action)
+                    jsn_actions = jData["Action"]
+                    actions = []
+                    for act in jsn_actions:
+                        action = json.loads(act, object_hook=EnumEncoder.as_enum)
+                        actions.append(action)
+                    self.onActionRequest(actions)
 
     def rotate_robot(self, rotation):
-        dir = Direction.NORD # Default rotation
-        rotation_success = False
+        dir = None # Default rotation
 
         if rotation == Action.RD:
             if self.direction == Direction.NORD:
@@ -114,18 +118,19 @@ class RobotBody(threading.Thread):
             self.max_battery -= self.rotation_drain_amt
         return dir
 
-    def onActionRequest(self, action):
-        # print(f"onActionRequest: {action}, x: {self.x}, y: {self.y}")
-        if action == Action.STEP:
-            self.step()
-        elif action == Action.RS:
-            self.direction = self.rotate_robot(Action.RS)
-            self.onRobotStateChange()
-            # print(f"after_rotation:{self.direction}")
-        elif action == Action.RD:
-            self.direction = self.rotate_robot(Action.RD)
-            self.onRobotStateChange()
-            # print(f"after_rotation:{self.direction}")
+    def onActionRequest(self, actions):
+        if len(self.actionBuffer) <= 0:
+            self.actionBuffer = actions
+            for action in self.actionBuffer:
+                if action == Action.STEP:
+                    self.step()
+                elif action == Action.RS:
+                    self.direction = self.rotate_robot(Action.RS)
+                    self.onRobotStateChange()
+                elif action == Action.RD:
+                    self.direction = self.rotate_robot(Action.RD)
+                    self.onRobotStateChange()
+            self.actionBuffer.clear()
 
     def onRobotStateChange(self):
         self.updateWorld()
@@ -167,7 +172,6 @@ class RobotBody(threading.Thread):
     # Il brain richiede l'azione di step al body (attuazione)
     def step(self):
         if self.can_step():
-            print(f"sens:{self.sensor}")
             self.on_step()
 
     def updateWorld(self):
@@ -183,7 +187,7 @@ class RobotBody(threading.Thread):
     def on_energy_gain(self):
         self.max_battery += MapElement.getEnergyValue()
 
-    def onUpdateSensorResponse(self, x, y, sensor_array):
+    def onUpdateSensorResponse(self, sensor_array):
         # update robot sensor
         self.sensor = sensor_array
         # check necessario per attendere che la classe world sia pronta ed invia dati
@@ -201,4 +205,4 @@ class RobotBody(threading.Thread):
     def run(self):
         while self.isWorldReady == False:
             self.updateWorld()
-            time.sleep(1)
+            time.sleep(0.4973)
