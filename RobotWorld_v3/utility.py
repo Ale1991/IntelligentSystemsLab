@@ -1,4 +1,4 @@
-import json, sys
+import json
 
 if __name__ == "__main__":
     from src.action import Action

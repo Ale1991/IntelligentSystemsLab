@@ -12,7 +12,7 @@ ROTATION_DRAIN_AMT = 1 # set 0 for free rotation cost
 MAX_BATTERY = 100
 ROBOT_NAME = "R"
 
-START_X, START_Y = 14, 12
+START_X, START_Y = 15, 12
 
 CH_BODY_WORLD = "CH_BODY_WORLD"# canale di comunicazione tra body e world
 CH_BRAIN_BODY = "CH_BRAIN_BODY"# canale di comunicazione tra body e brain
@@ -87,6 +87,7 @@ class RobotBody(threading.Thread):
                     for act in jsn_actions:
                         action = json.loads(act, object_hook=EnumEncoder.as_enum)
                         actions.append(action)
+
                     self.onActionRequest(actions)
 
     def rotate_robot(self, rotation):
@@ -205,4 +206,4 @@ class RobotBody(threading.Thread):
     def run(self):
         while self.isWorldReady == False:
             self.updateWorld()
-            time.sleep(0.4973)
+            time.sleep(0.04973)

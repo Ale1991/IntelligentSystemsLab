@@ -1,5 +1,4 @@
 import threading, json, redis, time
-from pyswip import Prolog
 
 from src.direction import Direction
 from src.action import Action
@@ -13,6 +12,7 @@ ROTATION_DRAIN_AMT = 1 # set 0 for free rotation cost
 ROBOT_NAME = "R"
 
 CH_BRAIN_BODY = "CH_BRAIN_BODY"
+
 
 class RobotBrain(threading.Thread):
     
@@ -29,6 +29,8 @@ class RobotBrain(threading.Thread):
         self._Redis = redis.Redis() # init redis
         self.init_BodyListener()
         self.init_Robot()
+
+        # self.init_prolog()
 
     def init_Robot(self):
         self.step_drain_amt = STEP_DRAIN_AMT
@@ -53,10 +55,11 @@ class RobotBrain(threading.Thread):
         self._listener.start()
 
     def init_prolog(self):
-        prolog = Prolog()
-        prolog.consult("robot_swi.pl")
-        # self.updatePrologSensorValue()
-        query = "move(X)."
+        pass
+        # self._prolog = Prolog()
+        # self._prolog.consult("src/robotBrain/robot_swi.pl")
+        # self.getActionListFromProlog()
+        # query = "move(X)."
         # queryResult = self._prolog.query(query)
         # for solution in queryResult:
         #     print("direction: ", solution["X"])
@@ -79,19 +82,30 @@ class RobotBrain(threading.Thread):
         self.direction = direction
         self.goalReached = self.checkGoal(x, y)
 
-    def updatePrologSensorValue(self):
-        pass
-        # print(f'sensor_Left("{self._sensor_array[0]}")')
-        # print(f'sensor_Forward("{self._sensor_array[1]}")')
-        # print((f'sensor_Right("{self._sensor_array[2]}")'))
-        # self._prolog.assertz(f'sensor_Left("{self._sensor_array[0]}")')
-        # self._prolog.assertz(f'sensor_Forward("{self._sensor_array[1]}")')
-        # self._prolog.assertz(f'sensor_Right("{self._sensor_array[2]}")')
+    def getActionListFromProlog(self):
+        from pyswip import Prolog
+        prolog = Prolog()
+        # print(f"sensor: {self._sensor_array}")
+        prolog.consult("src/robotBrain/robot_swi.pl")
+        prolog.assertz(f'sensor_Left("{self._sensor_array[0]}")')
+        prolog.assertz(f'sensor_Forward("{self._sensor_array[1]}")')
+        prolog.assertz(f'sensor_Right("{self._sensor_array[2]}")')
+        query = "move(X)."
+        queryResult = prolog.query(query)
+
+        action_list = []
+        for solution in queryResult:
+            for sol in solution["X"]:
+                action = sol.decode("utf-8", "ignore") # prolog.query ritorna bytecode in utf-8
+                action_list.append(action)
+            return action_list
 
     def actionBodyRequest(self, action_list):
         if action_list != None:
             jsn_actions = []
-            for action in action_list:
+            for action_str in action_list:
+                act, act_val = str(action_str).split(".")
+                action = Action[act_val]
                 jsn_act = json.dumps(action, cls=EnumEncoder)
                 jsn_actions.append(jsn_act)
             jsn = json.dumps({ 'brainRequest': 'Action', 'Action': jsn_actions})
@@ -104,14 +118,10 @@ class RobotBrain(threading.Thread):
         if self.direction != Direction.NORD and self.direction != Direction.EST and self.direction != Direction.SUD and self.direction != Direction.OVEST :
             pass
         else:
-            # self.updatePrologSensorValue()
-            # prolog = Prolog()
-            # prolog.consult("robot_swi.pl")
-            # self.updatePrologSensorValue()
-            # query = "move(X)."
-            # queryResult = self._prolog.query(query)
-            # for solution in queryResult:
-            #     print("direction: ", solution["X"])
+            # SOLVED - COMMENTED FOR SEGMENTATION FAULT (cause: Prolog is not thread-safe) 
+            return self.getActionListFromProlog()
+
+            # OLD CODE (working without prolog)
             if self.isLocked == True:
                 return self.randomPathfind()
             elif self.energyFound() == True:
@@ -122,7 +132,8 @@ class RobotBrain(threading.Thread):
                 return self.pathfindToForward()
             else:
                 return self.randomPathfind()
-         
+
+    #region OLDCODE (working without prolog)
     def tryNord(self):
         self._alreadyTriedNord = True
         self._canThink = False
@@ -178,6 +189,7 @@ class RobotBrain(threading.Thread):
         self._canThink = False
         self._alreadyTriedNord = False
         return random_action_list
+    #endregion
 #endregion
 
     def checkGoal(self, x, y):
@@ -190,5 +202,7 @@ class RobotBrain(threading.Thread):
         # time.sleep(3)
         while self.goalReached == False:
             print("-----------NEW ACTION-----------")
-            self.actionBodyRequest(self.azione())
-            time.sleep(0.1)
+            actions = self.azione()
+            print(f"actions: {actions}")
+            self.actionBodyRequest(actions)
+            time.sleep(1)

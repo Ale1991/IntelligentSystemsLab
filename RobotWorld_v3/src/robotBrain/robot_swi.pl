@@ -50,9 +50,9 @@ robot(right) :- robot_Right.
 trapped :- wall_Left, wall_Forward, wall_Right.
 
 % PERCEPTIONS
-step(left) :- energy_Left ; free_space_Left ; (isStucked , robot_Left).
-step(forward) :- energy_Forward ; free_space_Forward ; (isStucked , robot_Forward).
-step(right) :- energy_Right ; free_space_Right ; (isStucked , robot_Right).
+step(left) :- (energy_Left ; free_space_Left ; (isStucked , robot_Left)) , \+ trapped.
+step(forward) :- (energy_Forward ; free_space_Forward ; (isStucked , robot_Forward)) , \+ trapped.
+step(right) :- (energy_Right ; free_space_Right ; (isStucked , robot_Right)) , \+ trapped.
 
 % PLANNING RULE
 

@@ -156,4 +156,4 @@ class World(threading.Thread):
     def run(self):
         while self.isRunning == True:
             self.updateSensor()
-            time.sleep(0.4999)
+            time.sleep(0.04999)
