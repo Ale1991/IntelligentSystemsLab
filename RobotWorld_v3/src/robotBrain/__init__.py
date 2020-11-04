@@ -85,11 +85,28 @@ class RobotBrain(threading.Thread):
     def getActionListFromProlog(self):
         from pyswip import Prolog
         prolog = Prolog()
-        # print(f"sensor: {self._sensor_array}")
         prolog.consult("src/robotBrain/robot_swi.pl")
+        prolog.retractall("sensor_Left(X)")
+        prolog.retractall("sensor_Forward(X)")
+        prolog.retractall("sensor_Right(X)")
+        prolog.retractall("direction(X)")
         prolog.assertz(f'sensor_Left("{self._sensor_array[0]}")')
         prolog.assertz(f'sensor_Forward("{self._sensor_array[1]}")')
         prolog.assertz(f'sensor_Right("{self._sensor_array[2]}")')
+        prolog.assertz(f'direction("{self.direction.value}")')
+
+        # sens = prolog.query('sensor_Left(X)')
+        # for val in sens:
+        #     print(f"L:{val}")
+
+        # sens = prolog.query('sensor_Forward(X)')
+        # for val in sens:
+        #     print(f"C:{val}")
+
+        # sens = prolog.query('sensor_Right(X)')
+        # for val in sens:
+        #     print(f"R:{val}")
+
         query = "move(X)."
         queryResult = prolog.query(query)
 
@@ -205,4 +222,4 @@ class RobotBrain(threading.Thread):
             actions = self.azione()
             print(f"actions: {actions}")
             self.actionBodyRequest(actions)
-            time.sleep(1)
+            time.sleep(2)

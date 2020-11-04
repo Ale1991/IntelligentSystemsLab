@@ -4,12 +4,11 @@
 :- dynamic sensor_Left/1.
 :- dynamic sensor_Forward/1.
 :- dynamic sensor_Right/1.
+:- dynamic direction/1.
 
 :- dynamic stucked/1.
 
 isStucked :- stucked(1).
-% compass can read : s,e,w,n
-compass(s).
 
 % positive(X) :- X > 0.
 % negative(Y) :- Y \==0, \+ positive(Y).
@@ -45,6 +44,16 @@ robot_Right :- sensor_Right(A), A == "R".
 robot(left) :- robot_Left.
 robot(forward) :- robot_Forward.
 robot(right) :- robot_Right.
+
+direction_Nord :- direction(A), A == "NORD".
+direction_Est :- direction(A), A == "EST".
+direction_Sud :- direction(A), A == "SUD".
+direction_Ovest :- direction(A), A == "OVEST".
+
+direction(nord) :- direction_Nord.
+direction(est) :- direction_Est.
+direction(sud) :- direction_Sud.
+direction(ovest) :- direction_Ovest.
 
 % free_space :-  free_space_Left, free_space_Forward, free_space_Right.
 trapped :- wall_Left, wall_Forward, wall_Right.
