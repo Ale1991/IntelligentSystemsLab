@@ -13,6 +13,7 @@ ROBOT_NAME = "R"
 
 CH_BRAIN_BODY = "CH_BRAIN_BODY"
 
+PROLOG = False
 
 class RobotBrain(threading.Thread):
     
@@ -136,19 +137,20 @@ class RobotBrain(threading.Thread):
             pass
         else:
             # SOLVED - COMMENTED FOR SEGMENTATION FAULT (cause: Prolog is not thread-safe) 
-            return self.getActionListFromProlog()
-
-            # OLD CODE (working without prolog)
-            if self.isLocked == True:
-                return self.randomPathfind()
-            elif self.energyFound() == True:
-                return self.pathfindToEnergy()
-            elif self.direction != Direction.NORD and self._alreadyTriedNord == False:
-                return self.tryNord()
-            elif self.canGoForward() == True:
-                return self.pathfindToForward()
+            if(PROLOG):
+                return self.getActionListFromProlog()
             else:
-                return self.randomPathfind()
+                # OLD CODE (working without prolog)
+                if self.isLocked == True:
+                    return self.randomPathfind()
+                elif self.energyFound() == True:
+                    return self.pathfindToEnergy()
+                elif self.direction != Direction.NORD and self._alreadyTriedNord == False:
+                    return self.tryNord()
+                elif self.canGoForward() == True:
+                    return self.pathfindToForward()
+                else:
+                    return self.randomPathfind()
 
     #region OLDCODE (working without prolog)
     def tryNord(self):
@@ -222,4 +224,4 @@ class RobotBrain(threading.Thread):
             actions = self.azione()
             print(f"actions: {actions}")
             self.actionBodyRequest(actions)
-            time.sleep(2)
+            time.sleep(0.5)
